@@ -1,0 +1,5 @@
+*.cbp
+*.exe
+bin/
+nexus.in
+nexus.out
