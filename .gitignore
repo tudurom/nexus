@@ -1,5 +1,8 @@
 *.cbp
+*.depend
+*.layout
 *.exe
 bin/
+obj
 nexus.in
 nexus.out
