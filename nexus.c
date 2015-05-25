@@ -1,182 +1,168 @@
 #include <stdio.h>
 #include <stdlib.h>
 #define TABLE_WIDTH 7
-#define D 0
-#define DEPTH 2
+#define DEPTH 3
+#define INFINIT 1667
+#define D 1
+#define X 1
+#define O -1
+#define PLUS -2
+#define GOL 0
 
-struct TableStatus { // Structura care tine minte in ce stadiu este tabla
-  int scoreX, scoreO;
+
+struct TableStatus { // Structura returnata de getTableStatus()
+  int scores[3];
   int freeTiles;
-  char currentPlayer;
-  char winner;
+  int currentPlayer;
 };
 
-struct TableStatus* getTableStatus(char board[][TABLE_WIDTH]); // Returneaza starea unei table
-int minimax(char board[][TABLE_WIDTH], int depth, int maximizingPlayer); // Logica
-char oppositePlayer(char player);
+struct TableStatus* getTableStatus( char board[TABLE_WIDTH][TABLE_WIDTH] ); // Returneaza scorul lui X, al lui O si
+                                                                            // Numarul de patratele libere
+int minimax( char board[TABLE_WIDTH][TABLE_WIDTH], char depth, char player ); // Logica jocului
+inline int max( int a, int b );
+int thisPlayer;
 
-int movelf, movecf;
-int computerPlayer;
+int main() {
+  FILE *fin, *fout;
+  int lin, col;
+  char board[TABLE_WIDTH][TABLE_WIDTH];
+  struct TableStatus *status;
+  int moveLine, moveCol;
+  int score, tempScore;
 
-int main()
-{
-    FILE *fin, *fout;
-    int i, j;
-    char board[TABLE_WIDTH][TABLE_WIDTH];
-    struct TableStatus *status;
-    int moveLine, moveCol;
-    int score, tempScore;
-    if(D) {
-      fin = freopen("nexus.in", "r", stdin); // Folosim freopen cum trebuie :)
-      fout = freopen("nexus.out", "w", stdout);
+  if(D) {
+    fin = freopen( "nexus.in", "r", stdin );
+    fout = freopen( "nexus.out", "w", stdout );
+  }
+  for ( lin = 0; lin < TABLE_WIDTH; lin++ ) {
+    for ( col = 0; col < TABLE_WIDTH; col++ ) {
+      char c = fgetc( stdin );
+      char nr;
+      switch ( c ) {
+      case 'X':
+        nr = X;
+        break;
+      case 'O':
+        nr = O;
+        break;
+      case '+':
+        nr = PLUS;
+        break;
+      default:
+        nr = GOL;
+        break;
+      }
+      board[lin][col] = nr;
     }
-    for(i = 0; i < TABLE_WIDTH; i++) { // CIteste tabla
-      for(j = 0; j < TABLE_WIDTH; j++)
-        board[i][j] = fgetc(stdin);
-      fgetc(stdin);
-    }
-    status = getTableStatus(board);
-    computerPlayer = status->currentPlayer;
-    moveLine = moveCol = 0;
-    score = -1667;
-    for(i = 0; i < TABLE_WIDTH; i++) {
-      for(j = 0; j < TABLE_WIDTH; j++) {
-        if(board[i][j] == '-') {
-          board[i][j] = computerPlayer;
-          tempScore = -minimax(board, DEPTH, oppositePlayer(computerPlayer));
-          board[i][j] = '-';
-          if(tempScore > score) {
-            score = tempScore;
-            moveLine = i;
-            moveCol = j;
-          }
+    fgetc( stdin );
+  }
+  status = getTableStatus(board);
+  thisPlayer = status->currentPlayer;
+  moveLine = moveCol = -1;
+
+  score = -INFINIT;
+  for ( lin = 0; lin < TABLE_WIDTH; lin++ ) {
+    for ( col = 0; col < TABLE_WIDTH; col++) {
+      if ( board[lin][col] == GOL ) {
+        tempScore = minimax(board, DEPTH, thisPlayer);
+        if ( tempScore > score ) {
+          score = tempScore;
+          moveLine = lin;
+          moveCol = col;
         }
       }
     }
-    board[moveLine][moveCol] = computerPlayer;
-    for(i = 0; i < TABLE_WIDTH; i++) {
-      for(j = 0; j < TABLE_WIDTH; j++)
-        fputc(board[i][j], stdout);
-      fputc('\n', stdout);
+  }
+  board[moveLine][moveCol] = thisPlayer;
+
+  for ( lin = 0; lin < TABLE_WIDTH; lin++ ) {
+    for ( col = 0; col < TABLE_WIDTH; col++ ) {
+      switch ( board[lin][col] ) {
+        case X: fputc( 'X', stdout ); break;
+        case O: fputc( 'O', stdout ); break;
+        case PLUS: fputc( '+', stdout ); break;
+        default: fputc( '-', stdout ); break;
+      }
     }
-    if(D) {
-      fclose(fin);
-      fclose(fout);
-    }
-    return 0;
+    fputc( '\n', stdout );
+  }
+
+  if(D) {
+    fclose( fin );
+    fclose( fout );
+  }
+  return 0;
+}
+
+inline int max( int a, int b ) {
+  if(a > b)
+    return a;
+  else
+    return b;
 }
 
 struct TableStatus* getTableStatus(char board[][TABLE_WIDTH]) {
   struct TableStatus* status = malloc(sizeof(struct TableStatus));
-  int *scoreX = &(status->scoreX);
-  int *scoreO = &(status->scoreO);
-  int *freeTiles = &(status->freeTiles);
+  int scoreX, scoreO;
+  int freeTiles;
   int i, j;
-  int prevCh, lenSir;
-  int xMoves, oMoves;
+  int lenSir;
+  int xPlies, oPlies;
   int newScore[] = {0, 0, 0, 3, 10, 25, 56, 119};
 
-  *freeTiles = TABLE_WIDTH * TABLE_WIDTH;
-  *scoreX = 0;
-  *scoreO = 0;
-  xMoves = oMoves = 0;
-  for (i = 0; i < TABLE_WIDTH; i++) {
-    lenSir = 1;
-    prevCh = 0;
-    for (j = 0; j < TABLE_WIDTH; j++) {
-      if (prevCh == 'X' || prevCh == 'O') { // Calculaza scorul
-        if (board[i][j] == prevCh) {
+  xPlies = oPlies = 0;
+  scoreX = scoreO = 0;
+  freeTiles = 0;
+
+  for ( i = 0; i < TABLE_WIDTH; i++ ) {
+    for ( j = 0; j < TABLE_WIDTH; j++ ) {
+      if ( j > 0 ) {
+        if ( board[i][j - 1] == board[i][j] ) {
           lenSir++;
-        } else {
-          if (prevCh == 'X')
-            (*scoreX) += newScore[lenSir];
-          else if (prevCh == 'O')
-            (*scoreO) += newScore[lenSir];
-          lenSir = 1;
+        } else if ( board[i][j - 1] == X ) {
+          scoreX += newScore[lenSir];
+        } else if ( board[i][j - 1] == O ) {
+          scoreO += newScore[lenSir];
         }
+      } else {
+        lenSir = 1;
       }
-      // Calculeaza numarul de mutari
-      if (board[i][j] == 'X')
-        xMoves++;
-      else if(board[i][j] == 'O')
-        oMoves++;
-      else if(board[i][j] == '-') // Calculeaza numarul de patrate libere
-        (*freeTiles)--;
-      prevCh = board[i][j];
-    }
-    if (lenSir > 0) {
-      if (prevCh == 'X')
-        *scoreX += newScore[lenSir];
-      else if (prevCh == 'O')
-        *scoreO += newScore[lenSir];
-      lenSir = 0;
-    }
-  }
-  for (j = 0; j < TABLE_WIDTH; j++) {
-    lenSir = 1;
-    prevCh = 0;
-    for (i = 0; i < TABLE_WIDTH; i++) {
-      if (prevCh == 'X' || prevCh == 'O') {
-        if (board[i][j] == prevCh) {
-          lenSir++;
-        } else {
-          if (prevCh == 'X')
-            (*scoreX) += newScore[lenSir];
-          else if (prevCh == 'O')
-            (*scoreO) += newScore[lenSir];
-          lenSir = 1;
-        }
+      switch(board[i][j]) {
+        case X: xPlies++; break;
+        case O: oPlies++; break;
+        case GOL: freeTiles++; break;
       }
-      prevCh = board[i][j];
-    }
-    if (lenSir > 0) {
-      if (prevCh == 'X')
-        (*scoreX) += newScore[lenSir];
-      else if (prevCh == 'O')
-        (*scoreO) += newScore[lenSir];
-      lenSir = 0;
     }
   }
-  *freeTiles = 49 - *freeTiles;
-  if(*freeTiles == 0) {
-    status->winner = *scoreX > *scoreO ? 'X' : 'O';
-  } else {
-    status->winner = 0;
-  }
-  if(xMoves > oMoves)
-    status->currentPlayer = 'O';
-  else
-    status->currentPlayer = 'X';
+
+  status->scores[O + 1] = oPlies;
+  status->scores[X + 1] = xPlies;
+  status->currentPlayer = (xPlies > oPlies ? O : X);
+  status->freeTiles = freeTiles;
 
   return status;
 }
 
-int minimax(char board[][TABLE_WIDTH], int depth, int maximizingPlayer) {
+int minimax(char board[TABLE_WIDTH][TABLE_WIDTH], char depth, char player) {
   struct TableStatus *status = getTableStatus(board);
-  char player = maximizingPlayer ? computerPlayer : oppositePlayer(computerPlayer);
-  if(depth == 0 || status->freeTiles == 0) {
-    if(maximizingPlayer)
-      return (computerPlayer == 'X' ? status->scoreX : status->scoreO);
-    else
-      return -(computerPlayer == 'X' ? status->scoreX : status->scoreO);
+  if( depth == 0 || status->freeTiles == 0 ) {
+    return status->scores[player + 1] > status->scores[-player + 1] ? 1 :
+           status->scores[-player + 1] > status->scores[player + 1] ? -1 : 0;
   }
 
-  int bestScore = -1667;
-  int i, j;
-  for(i = 0; i < TABLE_WIDTH; i++) {
-    for(j = 0; j < TABLE_WIDTH; j++) {
-      if(board[i][j] == '-') {
-        board[i][j] = oppositePlayer(player);
-        int score = -minimax(board, depth - 1, !maximizingPlayer);
-        board[i][j] = '-';
-        if(score > bestScore)
-          bestScore = score;
+  int scor = -INFINIT;
+  int lin, col;
+  for ( lin = 0; lin < TABLE_WIDTH; lin++ ) {
+    for ( col = 0; col < TABLE_WIDTH; col++ ) {
+      if ( board[lin][col] == GOL ) {
+        board[lin][col] = player;
+        int miniScor = -minimax(board, depth - 1, -player);
+        scor = max(scor, miniScor);
+        board[lin][col] = GOL;
       }
     }
   }
-  return bestScore;
+
+  return scor;
 }
 
-char oppositePlayer(char player) {
-  return (player == 'X' ? 'O' : 'X');
-}
