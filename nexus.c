@@ -108,7 +108,7 @@ struct TableStatus* getTableStatus(char board[][TABLE_WIDTH]) {
   int i, j;
   int lenSir;
   int xPlies, oPlies;
-  int newScore[] = {0, 0, 0, 3, 10, 25, 56, 119};
+  int newScore[] = {0, 1, 2, 3, 10, 25, 56, 119};
 
   xPlies = oPlies = 0;
   scoreX = scoreO = 0;
@@ -134,6 +134,21 @@ struct TableStatus* getTableStatus(char board[][TABLE_WIDTH]) {
       }
     }
   }
+  for ( j = 0; j < TABLE_WIDTH; j++ ) {
+    for ( i = 0; i < TABLE_WIDTH; i++ ) {
+      if ( i > 0 ) {
+        if ( board[i - 1][j] == board[i][j] ) {
+          lenSir++;
+        } else if ( board[i - 1][j] == X ) {
+          scoreX += newScore[lenSir];
+        } else if ( board[i - 1][j] == O ) {
+          scoreO += newScore[lenSir];
+        }
+      } else {
+        lenSir = 1;
+      }
+    }
+  }
 
   status->scores[O + 1] = oPlies;
   status->scores[X + 1] = xPlies;
@@ -146,8 +161,9 @@ struct TableStatus* getTableStatus(char board[][TABLE_WIDTH]) {
 int minimax(char board[TABLE_WIDTH][TABLE_WIDTH], char depth, char player) {
   struct TableStatus *status = getTableStatus(board);
   if( depth == 0 || status->freeTiles == 0 ) {
-    return status->scores[player + 1] > status->scores[-player + 1] ? 1 :
-           status->scores[-player + 1] > status->scores[player + 1] ? -1 : 0;
+//    return status->scores[player + 1] > status->scores[-player + 1] ? 1 :
+//           status->scores[-player + 1] > status->scores[player + 1] ? -1 : 0;
+      return status->scores[player + 1];
   }
 
   int scor = -INFINIT;
