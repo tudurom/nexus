@@ -11,6 +11,6 @@ Programul are la baza [algoritmul Minimax](http://en.wikipedia.org/wiki/Minimax)
 
 Punctajul se acorda astfel:
 
-|Litere consecutive identice|3  |3  |5  |6  |7  |
-|:-------------------------:|---|---|---|---|---|
-|Scor                       |3  |10 |25 |56 |119|
+|Litere consecutive identice|1  |2  |3  |3  |5  |6  |7  |
+|:-------------------------:|---|---|---|---|---|---|---|
+|Scor                       |1  |2  |3  |10 |25 |56 |119|
