@@ -1,3 +1,5 @@
+![Logo][logo]
+
 # Nexus
 ## Programul care joaca Pah-tum
 
@@ -14,3 +16,5 @@ Punctajul se acorda astfel:
 |Litere consecutive identice|1  |2  |3  |3  |5  |6  |7  |
 |:-------------------------:|---|---|---|---|---|---|---|
 |Scor                       |1  |2  |3  |10 |25 |56 |119|
+
+[logo]: http://i.imgur.com/zt4isEf.png
