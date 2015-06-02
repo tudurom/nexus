@@ -3,6 +3,8 @@
 # Nexus
 ## Programul care joaca Pah-tum
 
+[![Join the chat at https://gitter.im/tudurom/nexus](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tudurom/nexus?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ### Ce face
 
 Acesta este un program facut de @tudurom si @cioltanandrei pentru [acest concurs de Pah-tum](http://algopedia.ro/wiki/index.php/Concurs_Pah-tum_2015,_clasa_a_6-a).
