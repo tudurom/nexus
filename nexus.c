@@ -1,13 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
+
 #define TABLE_WIDTH 7
-#define DEPTH 3
-#define INFINIT 1667
-#define D 0
+#define DEPTH 4
+#define INFINIT 32767 // Limita pozitiva a shortului
+#define D 1 // Debug
 #define X 1
 #define O -1
 #define PLUS -2
 #define GOL 0
+#define STOP_PROGRAM 930000 // Timpul pe care il are programul ca sa gaseasca o mutare
 
 
 struct TableStatus { // Structura returnata de getTableStatus()
@@ -21,7 +24,19 @@ struct TableStatus* getTableStatus( char board[TABLE_WIDTH][TABLE_WIDTH] ); // R
 int minimax( char board[TABLE_WIDTH][TABLE_WIDTH], char depth, short alpha, short beta, char player, char computerPlayer ); // Logica jocului
 inline int max( int a, int b );
 inline int min( int a, int b );
-int thisPlayer;
+inline int playerWon( int player, int scores[3] ); // Returneaza 1 daca player castiga, -1 daca -player castiga, 0 pt. remiza
+// Functie care returneaza timpul in microsecunde de la 1 ian 1970
+// sursa: http://algopedia.ro
+inline long long getTime() {
+  struct timeval tv;
+
+  gettimeofday(&tv, NULL);
+  return tv.tv_sec * 1000000LL + tv.tv_usec;
+}
+
+long long programStart; // Timpul la care programul incepe executia
+long long plyCounter = 0; // Nr. de semi-mutari procesate. Pt. statistica
+int thisPlayer; // Jucatorul cu care joaca programul
 
 int main() {
   FILE *fin, *fout;
@@ -31,10 +46,13 @@ int main() {
   int moveLine, moveCol;
   int score, tempScore;
 
+  // Pt. debug redeschidem stdin si stdout, ca sa nu complicam codul
   if(D) {
     fin = freopen( "nexus.in", "r", stdin );
     fout = freopen( "nexus.out", "w", stdout );
   }
+  programStart = getTime(); // Asta este pusa dupa deschiderea fiserelor, deoarece timpul acela nu se pune
+  // Citeste tabla dupa formatul nostru
   for ( lin = 0; lin < TABLE_WIDTH; lin++ ) {
     for ( col = 0; col < TABLE_WIDTH; col++ ) {
       char c = fgetc( stdin );
@@ -57,16 +75,17 @@ int main() {
     }
     fgetc( stdin );
   }
+  // Ia informatii despre tabla
   status = getTableStatus(board);
   thisPlayer = status->currentPlayer;
-  moveLine = moveCol = -1;
+  moveLine = moveCol = -1; // Nu mutam nicaieri, inca
 
   score = -INFINIT;
-  for ( lin = 0; lin < TABLE_WIDTH; lin++ ) {
+  for ( lin = 0; lin < TABLE_WIDTH; lin++ ) { // Luam toate mutarile la rand
     for ( col = 0; col < TABLE_WIDTH; col++) {
       if ( board[lin][col] == GOL ) {
         board[lin][col] = thisPlayer;
-        tempScore = -minimax(board, DEPTH, -INFINIT, +INFINIT, -thisPlayer, thisPlayer);
+        tempScore = -minimax(board, DEPTH, -INFINIT, +INFINIT, -thisPlayer, thisPlayer); // Magie
         board[lin][col] = GOL;
         if ( tempScore > score ) {
           score = tempScore;
@@ -76,8 +95,9 @@ int main() {
       }
     }
   }
-  board[moveLine][moveCol] = thisPlayer;
+  board[moveLine][moveCol] = thisPlayer; // Muta
 
+  //Afiseaza
   for ( lin = 0; lin < TABLE_WIDTH; lin++ ) {
     for ( col = 0; col < TABLE_WIDTH; col++ ) {
       switch ( board[lin][col] ) {
@@ -89,8 +109,8 @@ int main() {
     }
     fputc( '\n', stdout );
   }
-
   if(D) {
+    fprintf(stderr, "%lld\n%f", plyCounter, (getTime() - programStart) / 1000000.0f);
     fclose( fin );
     fclose( fout );
   }
@@ -109,6 +129,15 @@ inline int min( int a, int b ) {
     return a;
   else
     return b;
+}
+
+inline int playerWon( int player, int board[3] ) {
+  if(board[player + 1] > board[-player + 1])
+    return 1;
+  else if(board[-player + 1] > board[player + 1])
+    return -1;
+  else
+    return 0;
 }
 
 struct TableStatus* getTableStatus(char board[][TABLE_WIDTH]) {
@@ -131,8 +160,10 @@ struct TableStatus* getTableStatus(char board[][TABLE_WIDTH]) {
           lenSir++;
         } else if ( board[i][j - 1] == X ) {
           scoreX += newScore[lenSir];
+          lenSir = 1;
         } else if ( board[i][j - 1] == O ) {
           scoreO += newScore[lenSir];
+          lenSir = 1;
         }
       } else {
         lenSir = 1;
@@ -145,8 +176,9 @@ struct TableStatus* getTableStatus(char board[][TABLE_WIDTH]) {
     }
     if (board[i][j - 1] == X)
       scoreX += newScore[lenSir];
-    else
+    else if (board[i][j - 1] == O)
       scoreO += newScore[lenSir];
+    lenSir = 0;
   }
   for ( j = 0; j < TABLE_WIDTH; j++ ) {
     for ( i = 0; i < TABLE_WIDTH; i++ ) {
@@ -155,8 +187,10 @@ struct TableStatus* getTableStatus(char board[][TABLE_WIDTH]) {
           lenSir++;
         } else if ( board[i - 1][j] == X ) {
           scoreX += newScore[lenSir];
+          lenSir = 1;
         } else if ( board[i - 1][j] == O ) {
           scoreO += newScore[lenSir];
+          lenSir = 1;
         }
       } else {
         lenSir = 1;
@@ -164,8 +198,9 @@ struct TableStatus* getTableStatus(char board[][TABLE_WIDTH]) {
     }
     if (board[i - 1][j] == X)
       scoreX += newScore[lenSir];
-    else
+    else if (board[i - 1][j] == O)
       scoreO += newScore[lenSir];
+    lenSir = 0;
   }
 
   status->scores[O + 1] = scoreO;
@@ -176,18 +211,22 @@ struct TableStatus* getTableStatus(char board[][TABLE_WIDTH]) {
   return status;
 }
 
+// Negamax cu alpha-beta
+// http://algopedia.ro/wiki/index.php/Note_de_curs,_clasele_9-10,_22_mai_2014#Alpha-beta
 int minimax(char board[TABLE_WIDTH][TABLE_WIDTH], char depth, short alpha, short beta, char player, char computerPlayer) {
+  plyCounter++;
   struct TableStatus *status = getTableStatus(board);
-  if( depth == 0 || status->freeTiles == 0 ) {
+  if( depth == 0 || status->freeTiles == 0 || getTime() - programStart > STOP_PROGRAM ) {
 //    return status->scores[player + 1] > status->scores[-player + 1] ? 1 :
 //           status->scores[-player + 1] > status->scores[player + 1] ? -1 : 0;
-      return status->scores[computerPlayer + 1];
+//    return status->scores[computerPlayer + 1]
+      return playerWon(player, status->scores) * 10 - depth;
   }
 
   int scor = -INFINIT;
-  int lin = 0;
+  int lin = 0, col;
   while (lin < TABLE_WIDTH && alpha < beta) {
-    int col = 0;
+    col = 0;
     while (col < TABLE_WIDTH && alpha < beta) {
         if ( board[lin][col] == GOL ) {
             board[lin][col] = player;
@@ -197,7 +236,8 @@ int minimax(char board[TABLE_WIDTH][TABLE_WIDTH], char depth, short alpha, short
         }
         col++;
     }
-    lin++;
+    if(alpha < beta)
+      lin++;
   }
 //  for ( lin = 0; lin < TABLE_WIDTH; lin++ ) {
 //    for ( col = 0; col < TABLE_WIDTH; col++ ) {
