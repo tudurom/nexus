@@ -1,3 +1,8 @@
+/*
+   Nume program   : nexus.c
+   Nume concurent : Tudor Roman, Andrei Cioltan
+   E-mail         : romantudorel@gmail.com, cioltanandrei@yahoo.com
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,7 +16,7 @@
 #define O -1
 #define PLUS -2
 #define GOL 0
-#define STOP_PROGRAM 930000 // Timpul pe care il are programul ca sa gaseasca o mutare
+#define STOP_PROGRAM 980000 // Timpul pe care il are programul ca sa gaseasca o mutare
 
 
 struct TableStatus { // Structura returnata de getTableStatus()
