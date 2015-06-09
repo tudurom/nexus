@@ -33,6 +33,7 @@ int minimax( char board[TABLE_WIDTH][TABLE_WIDTH], char depth, short alpha,
 inline int max( int a, int b );
 inline int min( int a, int b );
 inline int playerWon( int player, int scores[3] ); // Returneaza 1 daca player castiga, -1 daca -player castiga, 0 pt. remiza
+inline int positionalEval( int lin, int col );
 // Functie care returneaza timpul in microsecunde de la 1 ian 1970
 // sursa: http://algopedia.ro
 inline long long getTime() {
@@ -45,6 +46,35 @@ inline long long getTime() {
 long long programStart; // Timpul la care programul incepe executia
 long long plyCounter = 0; // Nr. de semi-mutari procesate. Pt. statistica
 int thisPlayer; // Jucatorul cu care joaca programul
+
+int newMatScore[] = {0, 0, 0, 3, 10, 25, 56, 119};
+//int newPosScore[TABLE_WIDTH][TABLE_WIDTH] = {
+//  {0, 1, 2, 3, 2, 1, 0},
+//  {1, 2, 3, 4, 3, 2, 1},
+//  {2, 3, 4, 5, 4, 3, 2},
+//  {3, 4, 5, 6, 5, 4, 3},
+//  {2, 3, 4, 5, 4, 3, 2},
+//  {1, 2, 3, 4, 3, 2, 1},
+//  {0, 1, 2, 3, 2, 1, 0}
+//};
+//int newPosScore[TABLE_WIDTH][TABLE_WIDTH] = {
+//  {0, 1, 2, 3, 2, 1, 0},
+//  {1, 4, 5, 7, 5, 4, 1},
+//  {2, 5, 6, 8, 6, 5, 2},
+//  {3, 7, 8, 9, 8, 7, 3},
+//  {2, 5, 6, 8, 6, 5, 2},
+//  {1, 4, 5, 7, 5, 4, 1},
+//  {0, 1, 2, 3, 2, 1, 0}
+//};
+int newPosScore[TABLE_WIDTH][TABLE_WIDTH] = {
+  {0, 1, 2, 3, 2, 1, 0},
+  {1, 4, 5, 6, 5, 4, 1},
+  {2, 5, 7, 8, 7, 5, 2},
+  {3, 6, 8, 9, 8, 6, 3},
+  {2, 5, 7, 8, 7, 5, 2},
+  {1, 4, 5, 6, 5, 4, 1},
+  {0, 1, 2, 3, 2, 1, 0}
+};
 
 int main() {
   FILE *fin, *fout;
@@ -94,7 +124,7 @@ int main() {
     for ( col = 0; col < TABLE_WIDTH; col++) {
       if ( board[lin][col] == GOL ) {
         board[lin][col] = thisPlayer;
-        tempScore = - minimax(board, DEPTH, -INFINIT, +INFINIT, -thisPlayer, thisPlayer); // Magie
+        tempScore = (-minimax(board, DEPTH, -INFINIT, +INFINIT, -thisPlayer, thisPlayer)) /*+ positionalEval(lin, col)*/; // Magie
         board[lin][col] = GOL;
         if ( tempScore > score ) {
           score = tempScore;
@@ -119,7 +149,7 @@ int main() {
     fputc( '\n', stdout );
   }
   if(D) {
-    fprintf(stderr, "%lld\n%f", plyCounter, (getTime() - programStart) / 1000000.0f);
+    fprintf(stderr, "%lld\n%f", plyCounter, (double)(getTime() - programStart) / 1000000.0f);
     fclose( fin );
     fclose( fout );
   }
@@ -149,6 +179,10 @@ inline int playerWon( int player, int board[3] ) {
     return 0;
 }
 
+inline int positionalEval( int lin, int col ) {
+  return newPosScore[lin][col];
+}
+
 void getTableStatus(char board[TABLE_WIDTH][TABLE_WIDTH],
                                    struct TableStatus* stat ) {
   //= malloc(sizeof(struct TableStatus));
@@ -157,7 +191,6 @@ void getTableStatus(char board[TABLE_WIDTH][TABLE_WIDTH],
   int i, j;
   int lenSir = 0; // Lungimea unui sir cu caractere egale
   int xPlies, oPlies;
-  int newScore[] = {0, 0, 0, 3, 10, 25, 56, 119};
 
   xPlies = oPlies = 0;
   scoreX = scoreO = 0;
@@ -169,10 +202,10 @@ void getTableStatus(char board[TABLE_WIDTH][TABLE_WIDTH],
         if ( board[i][j - 1] == board[i][j] ) {
           lenSir++;
         } else if ( board[i][j - 1] == X ) {
-          scoreX += newScore[lenSir];
+          scoreX += newMatScore[lenSir];
           lenSir = 1;
         } else if ( board[i][j - 1] == O ) {
-          scoreO += newScore[lenSir];
+          scoreO += newMatScore[lenSir];
           lenSir = 1;
         } else {
           lenSir = 1;
@@ -187,9 +220,9 @@ void getTableStatus(char board[TABLE_WIDTH][TABLE_WIDTH],
       }
     }
     if (board[i][TABLE_WIDTH - 1] == X)
-      scoreX += newScore[lenSir];
+      scoreX += newMatScore[lenSir];
     else if (board[i][TABLE_WIDTH - 1] == O)
-      scoreO += newScore[lenSir];
+      scoreO += newMatScore[lenSir];
     lenSir = 0;
   }
   for ( j = 0; j < TABLE_WIDTH; j++ ) {
@@ -198,10 +231,10 @@ void getTableStatus(char board[TABLE_WIDTH][TABLE_WIDTH],
         if ( board[i - 1][j] == board[i][j] ) {
           lenSir++;
         } else if ( board[i - 1][j] == X ) {
-          scoreX += newScore[lenSir];
+          scoreX += newMatScore[lenSir];
           lenSir = 1;
         } else if ( board[i - 1][j] == O ) {
-          scoreO += newScore[lenSir];
+          scoreO += newMatScore[lenSir];
           lenSir = 1;
         } else {
           lenSir = 1;
@@ -211,9 +244,9 @@ void getTableStatus(char board[TABLE_WIDTH][TABLE_WIDTH],
       }
     }
     if (board[TABLE_WIDTH - 1][j] == X)
-      scoreX += newScore[lenSir];
+      scoreX += newMatScore[lenSir];
     else if (board[TABLE_WIDTH - 1][j] == O)
-      scoreO += newScore[lenSir];
+      scoreO += newMatScore[lenSir];
     lenSir = 0;
   }
 
@@ -231,11 +264,10 @@ int minimax(char board[TABLE_WIDTH][TABLE_WIDTH], char depth, short alpha, short
   struct TableStatus status;
   getTableStatus(board, &status);
   if( depth == 0 || status.freeTiles == 0 || getTime() - programStart > STOP_PROGRAM ) {
-    rc = playerWon(player, status.scores) * 10 - depth;
+    rc = playerWon(player, status.scores) * 10;
     return rc;
   }
 
-  int scor = -INFINIT;
   int lin = 0, col;
   while (lin < TABLE_WIDTH && alpha < beta) {
     col = 0;
