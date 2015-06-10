@@ -264,18 +264,20 @@ int minimax(char board[TABLE_WIDTH][TABLE_WIDTH], char depth, short alpha, short
   struct TableStatus status;
   getTableStatus(board, &status);
   if( depth == 0 || status.freeTiles == 0 || getTime() - programStart > STOP_PROGRAM ) {
-    rc = playerWon(player, status.scores) * 10;
+    //rc = playerWon(player, status.scores) * 10;
+    rc = status.scores[player + 1] - status.scores[-player + 1];
     return rc;
   }
-
+  int scor = -INFINIT;
   int lin = 0, col;
   while (lin < TABLE_WIDTH && alpha < beta) {
     col = 0;
     while (col < TABLE_WIDTH && alpha < beta) {
         if ( board[lin][col] == GOL ) {
             board[lin][col] = player;
-            int miniScor = -minimax(board, depth - 1, -beta, -alpha, -player, computerPlayer);
-            alpha = max(alpha, miniScor);
+            int val = -minimax(board, depth - 1, -beta, -alpha, -player, computerPlayer);
+            scor = max(scor, val);
+            alpha = max(alpha, val);
             board[lin][col] = GOL;
         }
         col++;
@@ -293,6 +295,6 @@ int minimax(char board[TABLE_WIDTH][TABLE_WIDTH], char depth, short alpha, short
 //      }
 //    }
 //  }
-  rc = min(alpha, beta);
+  rc = scor;
   return rc;
 }
