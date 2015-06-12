@@ -17,6 +17,8 @@
 #define PLUS -2
 #define GOL 0
 #define STOP_PROGRAM 980000 // Timpul pe care il are programul ca sa gaseasca o mutare
+#define MULT_POS_1 100
+#define MULT_POS_2 100
 
 
 struct TableStatus { // Structura returnata de getTableStatus()
@@ -34,6 +36,7 @@ inline int max( int a, int b );
 inline int min( int a, int b );
 inline int playerWon( int player, int scores[3] ); // Returneaza 1 daca player castiga, -1 daca -player castiga, 0 pt. remiza
 inline int positionalEval( int lin, int col );
+inline int dynamicPositionalEval( int lin, int col, char board[TABLE_WIDTH][TABLE_WIDTH], char player );
 // Functie care returneaza timpul in microsecunde de la 1 ian 1970
 // sursa: http://algopedia.ro
 inline long long getTime() {
@@ -41,6 +44,10 @@ inline long long getTime() {
 
   gettimeofday(&tv, NULL);
   return tv.tv_sec * 1000000LL + tv.tv_usec;
+}
+
+inline int isGood(char tile, char player) {
+  return tile == player || tile == GOL;
 }
 
 long long programStart; // Timpul la care programul incepe executia
@@ -107,7 +114,7 @@ int main() {
     for ( col = 0; col < TABLE_WIDTH; col++) {
       if ( board[lin][col] == GOL ) {
         board[lin][col] = thisPlayer;
-        tempScore = -minimax(board, DEPTH, -INFINIT, +INFINIT, -thisPlayer, thisPlayer) * 1000 + positionalEval(lin, col); // Magie
+        tempScore = (-minimax(board, DEPTH, -INFINIT, +INFINIT, -thisPlayer, thisPlayer) * MULT_POS_1 + positionalEval(lin, col)) * MULT_POS_2 + dynamicPositionalEval(lin, col, board, thisPlayer); // Magie
         board[lin][col] = GOL;
         if ( tempScore > score ) {
           score = tempScore;
@@ -164,6 +171,12 @@ inline int playerWon( int player, int board[3] ) {
 
 inline int positionalEval( int lin, int col ) {
   return newPosScore[lin][col];
+}
+
+inline dynamicPositionalEval( int lin, int col, char board[TABLE_WIDTH][TABLE_WIDTH], char player ) {
+  int sum = 0;
+  int i;
+  return sum;
 }
 
 void getTableStatus(char board[TABLE_WIDTH][TABLE_WIDTH],
