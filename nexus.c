@@ -10,7 +10,7 @@
 
 #define TABLE_WIDTH 7
 #define DEPTH 4
-#define INFINIT 32767 // Limita pozitiva a shortului
+#define INFINIT 2147483647 // Limita pozitiva a shortului
 #define D 0 // Debug
 #define X 1
 #define O -1
@@ -28,8 +28,8 @@ struct TableStatus { // Structura returnata de getTableStatus()
 void getTableStatus( char board[TABLE_WIDTH][TABLE_WIDTH],
                     struct TableStatus *status ); // Returneaza scorul lui X, al lui O si
                                                                             // Numarul de patratele libere
-int minimax( char board[TABLE_WIDTH][TABLE_WIDTH], char depth, short alpha,
-             short beta, char player, char computerPlayer ); // Logica jocului
+int minimax( char board[TABLE_WIDTH][TABLE_WIDTH], char depth, int alpha,
+             int beta, char player, char computerPlayer ); // Logica jocului
 inline int max( int a, int b );
 inline int min( int a, int b );
 inline int playerWon( int player, int scores[3] ); // Returneaza 1 daca player castiga, -1 daca -player castiga, 0 pt. remiza
@@ -48,24 +48,7 @@ long long plyCounter = 0; // Nr. de semi-mutari procesate. Pt. statistica
 int thisPlayer; // Jucatorul cu care joaca programul
 
 int newMatScore[] = {0, 0, 0, 3, 10, 25, 56, 119};
-//int newPosScore[TABLE_WIDTH][TABLE_WIDTH] = {
-//  {0, 1, 2, 3, 2, 1, 0},
-//  {1, 2, 3, 4, 3, 2, 1},
-//  {2, 3, 4, 5, 4, 3, 2},
-//  {3, 4, 5, 6, 5, 4, 3},
-//  {2, 3, 4, 5, 4, 3, 2},
-//  {1, 2, 3, 4, 3, 2, 1},
-//  {0, 1, 2, 3, 2, 1, 0}
-//};
-//int newPosScore[TABLE_WIDTH][TABLE_WIDTH] = {
-//  {0, 1, 2, 3, 2, 1, 0},
-//  {1, 4, 5, 7, 5, 4, 1},
-//  {2, 5, 6, 8, 6, 5, 2},
-//  {3, 7, 8, 9, 8, 7, 3},
-//  {2, 5, 6, 8, 6, 5, 2},
-//  {1, 4, 5, 7, 5, 4, 1},
-//  {0, 1, 2, 3, 2, 1, 0}
-//};
+
 int newPosScore[TABLE_WIDTH][TABLE_WIDTH] = {
   {0, 1, 2, 3, 2, 1, 0},
   {1, 4, 5, 6, 5, 4, 1},
@@ -124,7 +107,7 @@ int main() {
     for ( col = 0; col < TABLE_WIDTH; col++) {
       if ( board[lin][col] == GOL ) {
         board[lin][col] = thisPlayer;
-        tempScore = (-minimax(board, DEPTH, -INFINIT, +INFINIT, -thisPlayer, thisPlayer)) /*+ positionalEval(lin, col)*/; // Magie
+        tempScore = -minimax(board, DEPTH, -INFINIT, +INFINIT, -thisPlayer, thisPlayer) * 1000 + positionalEval(lin, col); // Magie
         board[lin][col] = GOL;
         if ( tempScore > score ) {
           score = tempScore;
@@ -185,7 +168,6 @@ inline int positionalEval( int lin, int col ) {
 
 void getTableStatus(char board[TABLE_WIDTH][TABLE_WIDTH],
                                    struct TableStatus* stat ) {
-  //= malloc(sizeof(struct TableStatus));
   int scoreX, scoreO;
   int freeTiles;
   int i, j;
@@ -258,13 +240,12 @@ void getTableStatus(char board[TABLE_WIDTH][TABLE_WIDTH],
 
 // Negamax cu alpha-beta
 // http://algopedia.ro/wiki/index.php/Note_de_curs,_clasele_9-10,_22_mai_2014#Alpha-beta
-int minimax(char board[TABLE_WIDTH][TABLE_WIDTH], char depth, short alpha, short beta, char player, char computerPlayer) {
+int minimax(char board[TABLE_WIDTH][TABLE_WIDTH], char depth, int alpha, int beta, char player, char computerPlayer) {
   int rc = 0;
   plyCounter++;
   struct TableStatus status;
   getTableStatus(board, &status);
   if( depth == 0 || status.freeTiles == 0 || getTime() - programStart > STOP_PROGRAM ) {
-    //rc = playerWon(player, status.scores) * 10;
     rc = status.scores[player + 1] - status.scores[-player + 1];
     return rc;
   }
@@ -285,16 +266,6 @@ int minimax(char board[TABLE_WIDTH][TABLE_WIDTH], char depth, short alpha, short
     if(alpha < beta)
       lin++;
   }
-//  for ( lin = 0; lin < TABLE_WIDTH; lin++ ) {
-//    for ( col = 0; col < TABLE_WIDTH; col++ ) {
-//      if ( board[lin][col] == GOL ) {
-//        board[lin][col] = player;
-//        int miniScor = -minimax(board, depth - 1, -player);
-//        scor = max(scor, miniScor);
-//        board[lin][col] = GOL;
-//      }
-//    }
-//  }
   rc = scor;
   return rc;
 }
