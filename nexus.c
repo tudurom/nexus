@@ -114,7 +114,7 @@ int main() {
     for ( col = 0; col < TABLE_WIDTH; col++) {
       if ( board[lin][col] == GOL ) {
         board[lin][col] = thisPlayer;
-        tempScore = (-minimax(board, DEPTH, -INFINIT, +INFINIT, -thisPlayer, thisPlayer) * MULT_POS_1 + positionalEval(lin, col)) * MULT_POS_2 + dynamicPositionalEval(lin, col, board, thisPlayer); // Magie
+        tempScore = (-minimax(board, DEPTH, -INFINIT, +INFINIT, -thisPlayer, thisPlayer) * MULT_POS_1 + positionalEval(lin, col)); // Magie
         board[lin][col] = GOL;
         if ( tempScore > score ) {
           score = tempScore;
