@@ -35,8 +35,8 @@ int minimax( char board[TABLE_WIDTH][TABLE_WIDTH], char depth, int alpha,
 inline int max( int a, int b );
 inline int min( int a, int b );
 inline int playerWon( int player, int scores[3] ); // Returneaza 1 daca player castiga, -1 daca -player castiga, 0 pt. remiza
-inline int positionalEval( int lin, int col );
-inline int dynamicPositionalEval( int lin, int col, char board[TABLE_WIDTH][TABLE_WIDTH], char player );
+inline int positionalEval( int lin, int col ); // Returneaza un scor pt. cat de centrata este piesa pe tabla
+inline int dynamicPositionalEval( int lin, int col, char board[TABLE_WIDTH][TABLE_WIDTH], char player ); // Returneaza cate pozitii libere pe linia lin si coloana col sunt
 // Functie care returneaza timpul in microsecunde de la 1 ian 1970
 // sursa: http://algopedia.ro
 inline long long getTime() {
@@ -176,6 +176,10 @@ inline int positionalEval( int lin, int col ) {
 inline dynamicPositionalEval( int lin, int col, char board[TABLE_WIDTH][TABLE_WIDTH], char player ) {
   int sum = 0;
   int i;
+
+  for (i = 0; i < TABLE_WIDTH; i++) {
+    sum += isGood(board[lin][i], player) + isGood(board[i][col], player);
+  }
   return sum;
 }
 
