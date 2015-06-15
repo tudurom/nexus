@@ -34,6 +34,8 @@ inline int max( int a, int b );
 inline int min( int a, int b );
 inline int playerWon( int player, int scores[3] ); // Returneaza 1 daca player castiga, -1 daca -player castiga, 0 pt. remiza
 inline int positionalEval( int lin, int col ); // Returneaza un scor in functie de pozitia mutarii
+inline int positionalEval2( int lin, int col, char player );
+void rebuildPositionalEval2Scores( char board[TABLE_WIDTH][TABLE_WIDTH] );
 // Functie care returneaza timpul in microsecunde de la 1 ian 1970
 // sursa: http://algopedia.ro
 inline long long getTime() {
@@ -58,6 +60,7 @@ int newPosScore[TABLE_WIDTH][TABLE_WIDTH] = {
   {1, 4, 5, 6, 5, 4, 1},
   {0, 1, 2, 3, 2, 1, 0}
 };
+int newPosScore2[3][TABLE_WIDTH][TABLE_WIDTH];
 
 int main() {
   FILE *fin, *fout;
@@ -101,13 +104,14 @@ int main() {
   getTableStatus(board, &status);
   thisPlayer = status.currentPlayer;
   moveLine = moveCol = -1; // Nu mutam nicaieri, inca
-
+  rebuildPositionalEval2Scores(board);
   score = -INFINIT;
   for ( lin = 0; lin < TABLE_WIDTH; lin++ ) { // Luam toate mutarile la rand
     for ( col = 0; col < TABLE_WIDTH; col++) {
       if ( board[lin][col] == GOL ) {
         board[lin][col] = thisPlayer;
-        tempScore = -minimax(board, DEPTH, -INFINIT, +INFINIT, -thisPlayer, thisPlayer) * 1000 + positionalEval(lin, col); // Magie
+        tempScore = -minimax(board, DEPTH, -INFINIT, +INFINIT, -thisPlayer, thisPlayer) * 100  // Scorul material +
+                    + positionalEval2(lin, col, -thisPlayer);                                 // Potential de extindere al adversarului
         board[lin][col] = GOL;
         if ( tempScore > score ) {
           score = tempScore;
@@ -153,17 +157,44 @@ inline int min( int a, int b ) {
     return b;
 }
 
-inline int playerWon( int player, int board[3] ) {
-  if(board[player + 1] > board[-player + 1])
-    return 1;
-  else if(board[-player + 1] > board[player + 1])
-    return -1;
-  else
-    return 0;
+void rebuildPositionalEval2Scores( char board[TABLE_WIDTH][TABLE_WIDTH] ) {
+  int pozitiv, lin, col, i, j, player, sum;
+
+  for (pozitiv = 0; pozitiv <= 1; pozitiv++) {
+    for (lin = 0; lin < TABLE_WIDTH; lin++) {
+      for (col = 0; col < TABLE_WIDTH; col++) {
+        if (board[lin][col] == GOL) {
+          player = (pozitiv == 0 ? X : O);
+          sum = 0;
+          i = lin;
+          while (i > 0 && (board[i - 1][col] == GOL || board[i - 1][col] == player))
+            i--;
+          sum += lin - i;
+          i = lin;
+          while (i < TABLE_WIDTH - 1 && (board[i + 1][col] == GOL || board[i + 1][col] == player))
+            i++;
+          sum += i - lin;
+          j = col;
+          while (j > 0 && (board[lin][j - 1] == GOL || board[lin][j - 1] == player))
+            j--;
+          sum += col - j;
+          j = col;
+          while (j < TABLE_WIDTH - 1 && (board[lin][j + 1] == GOL || board[lin][j + 1] == player))
+            j++;
+          sum += j - col;
+          newPosScore2[player + 1][lin][col] = sum;
+        }
+      }
+    }
+  }
 }
 
 inline int positionalEval( int lin, int col ) {
   return newPosScore[lin][col];
+}
+
+inline int positionalEval2( int lin, int col, char player ) {
+  return newPosScore2[player + 1][lin][col];
 }
 
 void getTableStatus(char board[TABLE_WIDTH][TABLE_WIDTH],
@@ -241,31 +272,34 @@ void getTableStatus(char board[TABLE_WIDTH][TABLE_WIDTH],
 // Negamax cu alpha-beta
 // http://algopedia.ro/wiki/index.php/Note_de_curs,_clasele_9-10,_22_mai_2014#Alpha-beta
 int minimax(char board[TABLE_WIDTH][TABLE_WIDTH], char depth, int alpha, int beta, char player, char computerPlayer) {
-  int rc = 0;
   plyCounter++;
+  int rc;
+  int lin, col;
+  int val;
   struct TableStatus status;
   getTableStatus(board, &status);
-  if( depth == 0 || status.freeTiles == 0 || getTime() - programStart > STOP_PROGRAM ) {
+
+  if (depth == 0 || status.freeTiles == 0 || getTime() - programStart > STOP_PROGRAM) {
     rc = status.scores[player + 1] - status.scores[-player + 1];
+    //printf("%d\t", rc);
     return rc;
   }
-  int scor = -INFINIT;
-  int lin = 0, col;
+
+  lin = 0;
   while (lin < TABLE_WIDTH && alpha < beta) {
     col = 0;
     while (col < TABLE_WIDTH && alpha < beta) {
-        if ( board[lin][col] == GOL ) {
-            board[lin][col] = player;
-            int val = -minimax(board, depth - 1, -beta, -alpha, -player, computerPlayer);
-            scor = max(scor, val);
-            alpha = max(alpha, val);
-            board[lin][col] = GOL;
-        }
-        col++;
+      if (board[lin][col] == GOL) {
+        board[lin][col] = player;
+        val = -minimax(board, depth - 1, -beta, -alpha, -player, computerPlayer);
+        alpha = max(alpha, val);
+        board[lin][col] = GOL;
+      }
+      col++;
     }
-    if(alpha < beta)
-      lin++;
+    lin++;
   }
-  rc = scor;
+
+  rc = min(alpha, beta);
   return rc;
 }
