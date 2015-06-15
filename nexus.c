@@ -10,7 +10,7 @@
 
 #define TABLE_WIDTH 7
 #define DEPTH 4
-#define INFINIT 2147483647 // Limita pozitiva a shortului
+#define INFINIT 2147483647 // Limita pozitiva a intului
 #define D 0 // Debug
 #define X 1
 #define O -1
@@ -35,7 +35,7 @@ inline int min( int a, int b );
 inline int playerWon( int player, int scores[3] ); // Returneaza 1 daca player castiga, -1 daca -player castiga, 0 pt. remiza
 inline int positionalEval( int lin, int col ); // Returneaza un scor in functie de pozitia mutarii
 inline int positionalEval2( int lin, int col, char player );
-void rebuildPositionalEval2Scores( char board[TABLE_WIDTH][TABLE_WIDTH] );
+void rebuildPositionalEval2Scores( char board[TABLE_WIDTH][TABLE_WIDTH] ); // Recalculeaza potentialul de extindere pentru ambii jucatori in matricea newPosScore2
 // Functie care returneaza timpul in microsecunde de la 1 ian 1970
 // sursa: http://algopedia.ro
 inline long long getTime() {
@@ -110,8 +110,9 @@ int main() {
     for ( col = 0; col < TABLE_WIDTH; col++) {
       if ( board[lin][col] == GOL ) {
         board[lin][col] = thisPlayer;
-        tempScore = -minimax(board, DEPTH, -INFINIT, +INFINIT, -thisPlayer, thisPlayer) * 100  // Scorul material +
-                    + positionalEval2(lin, col, -thisPlayer);                                 // Potential de extindere al adversarului
+        tempScore = (-minimax(board, DEPTH, -INFINIT, +INFINIT, -thisPlayer, thisPlayer) * 100  // Scorul material +
+                    + positionalEval2(lin, col, -thisPlayer)) * 100                             // Potential de extindere al adversarului -
+                    - positionalEval2(lin, col, thisPlayer);                                    // Potential de extindere al jucatorului
         board[lin][col] = GOL;
         if ( tempScore > score ) {
           score = tempScore;
@@ -166,19 +167,19 @@ void rebuildPositionalEval2Scores( char board[TABLE_WIDTH][TABLE_WIDTH] ) {
         if (board[lin][col] == GOL) {
           player = (pozitiv == 0 ? X : O);
           sum = 0;
-          i = lin;
+          i = lin; // Sus
           while (i > 0 && (board[i - 1][col] == GOL || board[i - 1][col] == player))
             i--;
           sum += lin - i;
-          i = lin;
+          i = lin; // Jos
           while (i < TABLE_WIDTH - 1 && (board[i + 1][col] == GOL || board[i + 1][col] == player))
             i++;
           sum += i - lin;
-          j = col;
+          j = col; // Stanga
           while (j > 0 && (board[lin][j - 1] == GOL || board[lin][j - 1] == player))
             j--;
           sum += col - j;
-          j = col;
+          j = col; // Dreapta
           while (j < TABLE_WIDTH - 1 && (board[lin][j + 1] == GOL || board[lin][j + 1] == player))
             j++;
           sum += j - col;
